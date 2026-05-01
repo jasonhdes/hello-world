@@ -491,6 +491,126 @@ yarn-error.log*
 next-env.d.ts
 EOF
 
+# --- Docker Configuration ---
+echo "🐳 Creating Docker configuration..."
+
+# --- Backend Dockerfile ---
+cat > backend/Dockerfile << 'EOF'
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+EXPOSE 3000
+
+CMD ["npm", "run", "start:prod"]
+EOF
+
+# --- Frontend Dockerfile ---
+cat > frontend/Dockerfile << 'EOF'
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+EXPOSE 3001
+
+ENV PORT=3001
+CMD ["npm", "run", "start"]
+EOF
+
+# --- Docker Compose ---
+cat > docker-compose.yml << 'EOF'
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    depends_on:
+      - backend
+    restart: unless-stopped
+EOF
+
+# --- Docker Compose Dev ---
+cat > docker-compose.dev.yml << 'EOF'
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run start:dev
+    environment:
+      - NODE_ENV=development
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+    depends_on:
+      - backend
+    restart: unless-stopped
+EOF
+
+# --- Backend .dockerignore ---
+cat > backend/.dockerignore << 'EOF'
+node_modules
+dist
+.git
+*.log
+EOF
+
+# --- Frontend .dockerignore ---
+cat > frontend/.dockerignore << 'EOF'
+node_modules
+.next
+.git
+*.log
+EOF
+
 # --- Install dependencies ---
 echo ""
 echo "📦 Installing dependencies..."

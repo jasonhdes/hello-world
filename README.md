@@ -119,12 +119,6 @@ git init
 # Add remote
 git remote add origin git@github.com:jasonhdes/hello-world.git
 
-# Create initial commit
-git add .
-git commit -m "Initial commit: NestJS backend + Next.js frontend"
-
-# Push to GitHub
-git push -u origin main
 ```
 
 ## 📝 API Endpoints
